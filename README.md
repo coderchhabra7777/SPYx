@@ -319,10 +319,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/your-username/stegocrypt/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-username/stegocrypt/discussions)
-- **Email**: support@stegocrypt.dev
-
+- **Email**: chhabragurnoor@gmail.com
 ## 🗺️ Roadmap
 
 ### Version 1.1 (Planned)
