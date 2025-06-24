@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+
+{% block title %}Hide Text - StegoCrypt{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-eye-slash"></i> Hide Text in Image</h5>
+            </div>
+            <div class="card-body">
+                <form id="hideForm" enctype="multipart/form-data">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="imageFile" class="form-label">
+                                    <i class="fas fa-image"></i> Cover Image
+                                </label>
+                                <input type="file" class="form-control" id="imageFile" name="image" 
+                                       accept=".png,.bmp,.tiff,.tif" required>
+                                <div class="form-text">Supported formats: PNG, BMP, TIFF (lossless formats only)</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="textInput" class="form-label">
+                                    <i class="fas fa-file-alt"></i> Secret Text
+                                </label>
+                                <textarea class="form-control" id="textInput" name="text" rows="8" 
+                                         placeholder="Enter your secret message here..." required></textarea>
+                                <div class="form-text">
+                                    <span id="charCount">0</span> characters
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="passwordInput" class="form-label">
+                                    <i class="fas fa-key"></i> Password
+                                </label>
+                                <input type="password" class="form-control" id="passwordInput" name="password" 
+                                       placeholder="Enter a strong password" required>
+                                <div class="form-text">Use a strong password for maximum security</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="compressionSelect" class="form-label">
+                                    <i class="fas fa-compress"></i> Compression Method
+                                </label>
+                                <select class="form-control" id="compressionSelect" name="compression">
+                                    <option value="lzma">LZMA (Better compression, slower)</option>
+                                    <option value="zlib">zlib (Faster, larger size)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div id="imagePreview" style="display: none;">
+                                    <label class="form-label">Image Preview</label>
+                                    <div class="border rounded p-2">
+                                        <img id="previewImg" class="img-fluid" style="max-height: 200px;">
+                                        <div id="imageInfo" class="mt-2 text-muted"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-12">
+                            <div id="progress" class="mb-3" style="display: none;">
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                         style="width: 100%"></div>
+                                </div>
+                                <div class="text-center mt-2">Processing...</div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-eye-slash"></i> Hide Text in Image
+                            </button>
+                            <a href="/" class="btn btn-secondary btn-lg ms-2">
+                                <i class="fas fa-arrow-left"></i> Back to Home
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="resultSection" class="row mt-4" style="display: none;">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-check-circle text-success"></i> Success!</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Steganographic Image</h6>
+                        <div class="border rounded p-2 mb-3">
+                            <img id="resultImg" class="img-fluid" style="max-height: 300px;">
+                        </div>
+                        <button id="downloadBtn" class="btn btn-success">
+                            <i class="fas fa-download"></i> Download Image
+                        </button>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Operation Statistics</h6>
+                        <div id="statsDisplay"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('hideForm');
+    const imageFile = document.getElementById('imageFile');
+    const textInput = document.getElementById('textInput');
+    const charCount = document.getElementById('charCount');
+    const previewImg = document.getElementById('previewImg');
+    const imagePreview = document.getElementById('imagePreview');
+    const imageInfo = document.getElementById('imageInfo');
+    const resultSection = document.getElementById('resultSection');
+    const resultImg = document.getElementById('resultImg');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const statsDisplay = document.getElementById('statsDisplay');
+    
+    let resultImageData = null;
+    
+    // Character counter
+    textInput.addEventListener('input', function() {
+        charCount.textContent = this.value.length;
+    });
+    
+    // Image preview
+    imageFile.addEventListener('change', function() {
+        const file = this.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                imagePreview.style.display = 'block';
+                
+                // Create image to get dimensions
+                const img = new Image();
+                img.onload = function() {
+                    const sizeKB = (file.size / 1024).toFixed(1);
+                    const estimatedCapacity = Math.floor((img.width * img.height * 3) / 8 / 3); // Rough estimate
+                    imageInfo.innerHTML = `
+                        <strong>Dimensions:</strong> ${img.width} × ${img.height} pixels<br>
+                        <strong>File Size:</strong> ${sizeKB} KB<br>
+                        <strong>Estimated Capacity:</strong> ~${estimatedCapacity.toLocaleString()} characters
+                    `;
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        } else {
+            imagePreview.style.display = 'none';
+        }
+    });
+    
+    // Form submission
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(form);
+        
+        // Show progress
+        showProgress(true);
+        resultSection.style.display = 'none';
+        
+        fetch('/hide', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            showProgress(false);
+            
+            if (data.success) {
+                // Display result image
+                resultImageData = data.image_data;
+                resultImg.src = 'data:image/png;base64,' + data.image_data;
+                
+                // Display statistics
+                const stats = data.stats;
+                statsDisplay.innerHTML = `
+                    <div class="stats-card">
+                        <h6><i class="fas fa-info-circle"></i> Processing Results</h6>
+                        <p><strong>Original text size:</strong> ${formatBytes(stats.original_text_size)}</p>
+                        <p><strong>Compressed size:</strong> ${formatBytes(stats.compressed_size)}</p>
+                        <p><strong>Compression ratio:</strong> ${formatPercentage(stats.compression_ratio)}</p>
+                        <p><strong>Encrypted data size:</strong> ${formatBytes(stats.encrypted_size)}</p>
+                        <p><strong>Image capacity:</strong> ${formatBytes(stats.image_capacity)}</p>
+                        <p><strong>Utilization:</strong> ${formatPercentage(stats.utilization_percent / 100)}</p>
+                        <p><strong>Processing time:</strong> ${stats.processing_time.toFixed(3)}s</p>
+                    </div>
+                `;
+                
+                resultSection.style.display = 'block';
+                showAlert(data.message, 'success');
+                
+                // Scroll to result
+                resultSection.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                showAlert(data.error, 'danger');
+            }
+        })
+        .catch(error => {
+            showProgress(false);
+            showAlert('Network error: ' + error.message, 'danger');
+        });
+    });
+    
+    // Download functionality
+    downloadBtn.addEventListener('click', function() {
+        if (resultImageData) {
+            const link = document.createElement('a');
+            link.href = 'data:image/png;base64,' + resultImageData;
+            link.download = 'stego_image.png';
+            link.click();
+        }
+    });
+});
+</script>
+{% endblock %}

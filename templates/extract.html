@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}Extract Text - StegoCrypt{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-search"></i> Extract Text from Image</h5>
+            </div>
+            <div class="card-body">
+                <form id="extractForm" enctype="multipart/form-data">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="imageFile" class="form-label">
+                                    <i class="fas fa-image"></i> Steganographic Image
+                                </label>
+                                <input type="file" class="form-control" id="imageFile" name="image" 
+                                       accept=".png,.bmp,.tiff,.tif" required>
+                                <div class="form-text">Upload the image containing hidden text</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="passwordInput" class="form-label">
+                                    <i class="fas fa-key"></i> Password
+                                </label>
+                                <input type="password" class="form-control" id="passwordInput" name="password" 
+                                       placeholder="Enter the password used for hiding" required>
+                                <div class="form-text">Must match the password used when hiding the text</div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div id="imagePreview" style="display: none;">
+                                <label class="form-label">Image Preview</label>
+                                <div class="border rounded p-2">
+                                    <img id="previewImg" class="img-fluid" style="max-height: 200px;">
+                                    <div id="imageInfo" class="mt-2 text-muted"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-12">
+                            <div id="progress" class="mb-3" style="display: none;">
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                         style="width: 100%"></div>
+                                </div>
+                                <div class="text-center mt-2">Extracting...</div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-search"></i> Extract Hidden Text
+                            </button>
+                            <a href="/" class="btn btn-secondary btn-lg ms-2">
+                                <i class="fas fa-arrow-left"></i> Back to Home
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="resultSection" class="row mt-4" style="display: none;">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-check-circle text-success"></i> Text Extracted Successfully!</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h6>Extracted Text</h6>
+                        <div class="border rounded p-3 mb-3" style="background-color: #f8f9fa;">
+                            <pre id="extractedText" style="white-space: pre-wrap; margin: 0;"></pre>
+                        </div>
+                        <button id="copyBtn" class="btn btn-success">
+                            <i class="fas fa-copy"></i> Copy Text
+                        </button>
+                        <button id="downloadTextBtn" class="btn btn-info ms-2">
+                            <i class="fas fa-download"></i> Download as File
+                        </button>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>Extraction Statistics</h6>
+                        <div id="statsDisplay"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('extractForm');
+    const imageFile = document.getElementById('imageFile');
+    const previewImg = document.getElementById('previewImg');
+    const imagePreview = document.getElementById('imagePreview');
+    const imageInfo = document.getElementById('imageInfo');
+    const resultSection = document.getElementById('resultSection');
+    const extractedText = document.getElementById('extractedText');
+    const copyBtn = document.getElementById('copyBtn');
+    const downloadTextBtn = document.getElementById('downloadTextBtn');
+    const statsDisplay = document.getElementById('statsDisplay');
+    
+    let currentText = '';
+    
+    // Image preview
+    imageFile.addEventListener('change', function() {
+        const file = this.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                imagePreview.style.display = 'block';
+                
+                const img = new Image();
+                img.onload = function() {
+                    const sizeKB = (file.size / 1024).toFixed(1);
+                    imageInfo.innerHTML = `
+                        <strong>Dimensions:</strong> ${img.width} × ${img.height} pixels<br>
+                        <strong>File Size:</strong> ${sizeKB} KB
+                    `;
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        } else {
+            imagePreview.style.display = 'none';
+        }
+    });
+    
+    // Form submission
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(form);
+        
+        showProgress(true);
+        resultSection.style.display = 'none';
+        
+        fetch('/extract', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            showProgress(false);
+            
+            if (data.success) {
+                currentText = data.text;
+                extractedText.textContent = data.text;
+                
+                const stats = data.stats;
+                statsDisplay.innerHTML = `
+                    <div class="stats-card">
+                        <h6><i class="fas fa-info-circle"></i> Extraction Results</h6>
+                        <p><strong>Text length:</strong> ${data.text.length.toLocaleString()} characters</p>
+                        <p><strong>Extracted size:</strong> ${formatBytes(stats.extracted_size)}</p>
+                        <p><strong>Decompressed size:</strong> ${formatBytes(stats.decompressed_size)}</p>
+                        <p><strong>Processing time:</strong> ${stats.processing_time.toFixed(3)}s</p>
+                    </div>
+                `;
+                
+                resultSection.style.display = 'block';
+                showAlert(data.message, 'success');
+                resultSection.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                showAlert(data.error, 'danger');
+            }
+        })
+        .catch(error => {
+            showProgress(false);
+            showAlert('Network error: ' + error.message, 'danger');
+        });
+    });
+    
+    // Copy functionality
+    copyBtn.addEventListener('click', function() {
+        navigator.clipboard.writeText(currentText).then(function() {
+            showAlert('Text copied to clipboard!', 'success');
+        }).catch(function() {
+            showAlert('Failed to copy text', 'warning');
+        });
+    });
+    
+    // Download functionality
+    downloadTextBtn.addEventListener('click', function() {
+        const blob = new Blob([currentText], { type: 'text/plain' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'extracted_text.txt';
+        link.click();
+    });
+});
+</script>
+{% endblock %}

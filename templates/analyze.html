@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Analyze Image - StegoCrypt{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-bar"></i> Analyze Image Capacity</h5>
+            </div>
+            <div class="card-body">
+                <form id="analyzeForm" enctype="multipart/form-data">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="imageFile" class="form-label">
+                                    <i class="fas fa-image"></i> Image to Analyze
+                                </label>
+                                <input type="file" class="form-control" id="imageFile" name="image" 
+                                       accept=".png,.bmp,.tiff,.tif,.jpg,.jpeg" required>
+                                <div class="form-text">Upload any image to analyze its steganography capacity</div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-chart-bar"></i> Analyze Capacity
+                            </button>
+                            <a href="/" class="btn btn-secondary btn-lg ms-2">
+                                <i class="fas fa-arrow-left"></i> Back to Home
+                            </a>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div id="imagePreview" style="display: none;">
+                                <label class="form-label">Image Preview</label>
+                                <div class="border rounded p-2">
+                                    <img id="previewImg" class="img-fluid" style="max-height: 300px;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="resultSection" class="row mt-4" style="display: none;">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-line text-success"></i> Analysis Results</h5>
+            </div>
+            <div class="card-body">
+                <div id="analysisResults"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('analyzeForm');
+    const imageFile = document.getElementById('imageFile');
+    const previewImg = document.getElementById('previewImg');
+    const imagePreview = document.getElementById('imagePreview');
+    const resultSection = document.getElementById('resultSection');
+    const analysisResults = document.getElementById('analysisResults');
+    
+    // Image preview
+    imageFile.addEventListener('change', function() {
+        const file = this.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                imagePreview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        } else {
+            imagePreview.style.display = 'none';
+        }
+    });
+    
+    // Form submission
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(form);
+        
+        showProgress(true);
+        resultSection.style.display = 'none';
+        
+        fetch('/analyze', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            showProgress(false);
+            
+            if (data.success) {
+                const analysis = data.analysis;
+                
+                analysisResults.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="stats-card">
+                                <h6><i class="fas fa-info-circle"></i> Image Properties</h6>
+                                <p><strong>Dimensions:</strong> ${analysis.width} × ${analysis.height} pixels</p>
+                                <p><strong>Color Mode:</strong> ${analysis.mode}</p>
+                                <p><strong>Channels:</strong> ${analysis.channels}</p>
+                                <p><strong>File Size:</strong> ${formatBytes(analysis.file_size)}</p>
+                                <p><strong>Format:</strong> ${analysis.format || 'Unknown'}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="stats-card">
+                                <h6><i class="fas fa-database"></i> Capacity Analysis</h6>
+                                <p><strong>Total Pixels:</strong> ${analysis.total_pixels.toLocaleString()}</p>
+                                <p><strong>Available Bits:</strong> ${analysis.available_bits.toLocaleString()}</p>
+                                <p><strong>Max Data Capacity:</strong> ${formatBytes(analysis.max_data_capacity)}</p>
+                                <p><strong>Estimated Text Capacity:</strong> ~${analysis.estimated_text_capacity_chars.toLocaleString()} characters</p>
+                                <p><strong>Recommended for:</strong> ${analysis.recommended_use}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6><i class="fas fa-lightbulb"></i> Recommendations</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="text-center">
+                                                <div class="feature-icon" style="font-size: 2rem; color: ${analysis.suitability_score > 0.8 ? '#28a745' : analysis.suitability_score > 0.5 ? '#ffc107' : '#dc3545'};">
+                                                    <i class="fas fa-${analysis.suitability_score > 0.8 ? 'thumbs-up' : analysis.suitability_score > 0.5 ? 'meh' : 'thumbs-down'}"></i>
+                                                </div>
+                                                <h6>Suitability Score</h6>
+                                                <p class="text-muted">${(analysis.suitability_score * 100).toFixed(1)}%</p>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-8">
+                                            <h6>Tips for Better Steganography:</h6>
+                                            <ul>
+                                                <li>Use lossless formats (PNG, BMP, TIFF) for best results</li>
+                                                <li>Larger images provide more hiding capacity</li>
+                                                <li>Complex images with varied colors work better</li>
+                                                <li>Avoid images with large uniform areas</li>
+                                                <li>RGB images offer more capacity than grayscale</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                resultSection.style.display = 'block';
+                showAlert(data.message, 'success');
+                resultSection.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                showAlert(data.error, 'danger');
+            }
+        })
+        .catch(error => {
+            showProgress(false);
+            showAlert('Network error: ' + error.message, 'danger');
+        });
+    });
+});
+</script>
+{% endblock %}
