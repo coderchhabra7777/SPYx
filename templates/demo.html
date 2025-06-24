@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}Demo - StegoCrypt{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-play"></i> StegoCrypt Demonstration</h5>
+            </div>
+            <div class="card-body">
+                <p class="lead">Experience the power of advanced steganography with this interactive demonstration.</p>
+                
+                {% if demo_image %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Demo Test Image</h6>
+                        <div class="border rounded p-2 mb-3">
+                            <img src="data:image/png;base64,{{ demo_image }}" class="img-fluid" style="max-height: 300px;">
+                        </div>
+                        <p class="text-muted">This test image was automatically generated for demonstration purposes.</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Image Analysis</h6>
+                        <div class="stats-card">
+                            <p><strong>Dimensions:</strong> {{ analysis.width }} × {{ analysis.height }} pixels</p>
+                            <p><strong>Color Mode:</strong> {{ analysis.mode }}</p>
+                            <p><strong>Channels:</strong> {{ analysis.channels }}</p>
+                            <p><strong>Max Capacity:</strong> {{ "%.0f"|format(analysis.max_data_capacity) }} bytes</p>
+                            <p><strong>Text Capacity:</strong> ~{{ "{:,}".format(analysis.estimated_text_capacity_chars) }} characters</p>
+                            <p><strong>Suitability:</strong> {{ "%.1f"|format(analysis.suitability_score * 100) }}%</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if error %}
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i> {{ error }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-rocket"></i> Try It Yourself</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100 text-center">
+                            <div class="card-body">
+                                <i class="fas fa-eye-slash feature-icon"></i>
+                                <h6 class="card-title">Hide Demo Text</h6>
+                                <p class="card-text">Use the demo image above to hide a secret message</p>
+                                <a href="/hide" class="btn btn-primary">
+                                    <i class="fas fa-arrow-right"></i> Hide Text
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100 text-center">
+                            <div class="card-body">
+                                <i class="fas fa-search feature-icon"></i>
+                                <h6 class="card-title">Extract Hidden Text</h6>
+                                <p class="card-text">Upload a steganographic image to reveal its secrets</p>
+                                <a href="/extract" class="btn btn-primary">
+                                    <i class="fas fa-arrow-right"></i> Extract Text
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100 text-center">
+                            <div class="card-body">
+                                <i class="fas fa-chart-bar feature-icon"></i>
+                                <h6 class="card-title">Analyze Your Images</h6>
+                                <p class="card-text">Check the steganography capacity of your own images</p>
+                                <a href="/analyze" class="btn btn-primary">
+                                    <i class="fas fa-arrow-right"></i> Analyze
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-info-circle"></i> How StegoCrypt Works</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-shield-alt"></i> Security Process</h6>
+                        <ol>
+                            <li><strong>Text Input:</strong> Your secret message is prepared for processing</li>
+                            <li><strong>Compression:</strong> LZMA or zlib compression reduces data size by 70%+</li>
+                            <li><strong>Encryption:</strong> AES-256-CBC with PBKDF2 key derivation (100,000 iterations)</li>
+                            <li><strong>Embedding:</strong> LSB steganography hides data in image pixels</li>
+                            <li><strong>Integrity:</strong> SHA-256 checksums ensure data hasn't been tampered with</li>
+                        </ol>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-cogs"></i> Technical Features</h6>
+                        <ul>
+                            <li><strong>AES-256 Encryption:</strong> Military-grade security</li>
+                            <li><strong>PBKDF2 Key Derivation:</strong> Resistant to brute force attacks</li>
+                            <li><strong>LZMA Compression:</strong> Optimal space efficiency</li>
+                            <li><strong>LSB Steganography:</strong> Invisible data embedding</li>
+                            <li><strong>Data Integrity:</strong> Tamper detection and verification</li>
+                            <li><strong>Cross-Platform:</strong> Works on Windows, macOS, Linux</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-lightbulb"></i> Best Practices</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-key"></i> Security Tips</h6>
+                        <ul>
+                            <li>Use strong, unique passwords (12+ characters)</li>
+                            <li>Include uppercase, lowercase, numbers, and symbols</li>
+                            <li>Never reuse passwords from other accounts</li>
+                            <li>Store passwords securely (password manager)</li>
+                            <li>Don't share passwords via insecure channels</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-image"></i> Image Selection</h6>
+                        <ul>
+                            <li>Use lossless formats (PNG, BMP, TIFF)</li>
+                            <li>Choose images with varied colors and textures</li>
+                            <li>Larger images provide more hiding capacity</li>
+                            <li>Avoid images with large uniform areas</li>
+                            <li>RGB images offer more capacity than grayscale</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-download"></i> Get Started</h5>
+            </div>
+            <div class="card-body text-center">
+                <p class="lead">Ready to secure your communications?</p>
+                <div class="row">
+                    <div class="col-md-4 mb-2">
+                        <a href="/hide" class="btn btn-primary btn-lg w-100">
+                            <i class="fas fa-eye-slash"></i><br>Hide Text
+                        </a>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <a href="/extract" class="btn btn-success btn-lg w-100">
+                            <i class="fas fa-search"></i><br>Extract Text
+                        </a>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <a href="/analyze" class="btn btn-info btn-lg w-100">
+                            <i class="fas fa-chart-bar"></i><br>Analyze Image
+                        </a>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <a href="/" class="btn btn-secondary">
+                        <i class="fas fa-home"></i> Back to Home
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
