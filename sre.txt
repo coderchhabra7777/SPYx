@@ -1,0 +1,54 @@
+Project Title: StegoCrypt – Secure Text Hiding System using AES + Compression + Steganography
+
+1. Objective:
+   Design a secure, efficient system to hide and retrieve encrypted and compressed text within images using steganography.
+
+2. Features:
+   - Compress input text using LZMA (or zlib as fallback)
+   - Encrypt compressed data using AES-256
+   - Embed encrypted bytes into the least significant bits of an image (PNG recommended)
+   - GUI for user to:
+     - Upload a clean image
+     - Enter text and hide it inside the image
+     - Upload encoded image and retrieve original message
+
+3. Functional Modules:
+   - `compress_text(text: str) -> bytes`
+   - `encrypt_data(data: bytes, password: str) -> bytes`
+   - `hide_data_in_image(image: Image, data: bytes) -> Image`
+   - `extract_data_from_image(image: Image) -> bytes`
+   - `decrypt_data(data: bytes, password: str) -> bytes`
+   - `decompress_text(data: bytes) -> str`
+
+4. Tech Stack:
+   - Language: Python 3.10+
+   - GUI: Tkinter
+   - Imaging: Pillow
+   - Encryption: PyCryptodome (AES)
+   - Compression: LZMA (fallback to zlib)
+   - Dependencies:
+     pip install pillow pycryptodome
+
+5. Usage Flow:
+   a. User uploads cover image
+   b. User types secret text + password
+   c. System compresses + encrypts text
+   d. System embeds in LSBs of image
+   e. User saves output image
+
+   (Reverse for decoding)
+
+6. Security:
+   - AES-256 encryption with CBC and PBKDF2 key derivation
+   - 128-bit IV and salt used
+   - Only one password required
+
+7. Constraints:
+   - Works best with lossless PNG images
+   - Large text messages require large enough image
+
+8. Future Scope:
+   - Add QR code export of encrypted text
+   - Add video steganography
+   - Add hash-based tamper detection
+
